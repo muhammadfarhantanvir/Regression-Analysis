@@ -1,0 +1,159 @@
+---
+title: "Regression Analysis"
+author: "Muhammad Farhan Tanvir"
+date: "2023-06-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+```
+
+
+
+```{r}
+#libraries
+library(ggplot2)
+library(gridExtra)
+library(ggcorrplot)
+library(car)
+library(skimr)
+library(olsrr)
+library(ggpubr)
+library(cowplot)
+```
+
+
+
+```{r}
+# Read the data set
+bike <- read.csv("Bikedata.csv")
+
+missing_values <- sum(is.na(bike))
+
+print(paste("Total missing values:", missing_values))
+
+cbind(lapply(lapply(bike, is.na),sum))
+
+```
+
+
+```{r}
+#  Task 1 Descriptive analysis
+bike_df <- tibble::as_tibble(bike)
+skim(bike_df)
+table1 <- table(bike_df$Seasons, bike_df$Holiday)
+ftable(table1)
+```
+
+
+```{r}
+# Task 1 Correlation heatmap
+
+
+heatmap <- ggcorrplot(round(cor(bike_df[,1:9]), digit = 2), hc.order = TRUE,lab = TRUE, outline.col = "black",ggtheme = ggplot2::theme_gray,colors = c("#87CEEB", "white", "#2471A3"))
+
+heatmap
+```
+
+
+
+
+
+```{r}
+# Task 2
+# Fit a linear regression model
+model <- lm(log.Rented.Bike.Count ~ ., data = bike_df)
+
+# Print the model summary
+summary(model)
+
+```
+
+```{r}
+#Task 3
+# Best Subset Selection 
+
+Subset <- ols_step_all_possible(model)
+
+
+```
+
+
+
+
+```{r}
+BIC<-min(Subset$sbc) 
+idx_BIC = which.min(Subset$sbc) 
+print(paste("BIC VALUE:", BIC))
+```
+
+
+
+```{r}
+
+variables_in_bic<-Subset[idx_BIC,3]
+
+variables_in_bic
+```
+
+
+
+
+
+
+```{r}
+#Task 3
+## Estimate the "best" linear model for log.Rented.Bike.Count using the BIC 
+
+
+model_bike <- data.frame(bike$log.Rented.Bike.Count, bike$Hour, bike$Temperature, bike$Humidity, bike$Rainfall, bike$Seasons, bike$Holiday)
+
+lm_bic <- lm(model_bike$bike.log.Rented.Bike.Count ~ ., data = model_bike)
+
+summary(lm_bic)
+
+rs <- rstandard(lm_bic)
+```
+
+
+```{r}
+#Task 3
+# 95% confidence interval
+confint(lm_bic)
+```
+
+
+
+
+
+```{r}
+#Task 4: Residual plots and assumption check
+par(mfrow = c(2, 2))
+
+# Plot 1: Residuals vs Fitted
+plot(lm_bic, which = 1)
+
+# Plot 2: Normal Q-Q plot
+plot(lm_bic, which = 2)
+
+# Plot 3: Scale-Location plot
+plot(lm_bic, which = 3)
+
+```
+
+
+```{r}
+#Task 4 variance inflation factor (VIF)
+vif(lm_bic)
+```
+
+
+
+
+
+
+
+
+
